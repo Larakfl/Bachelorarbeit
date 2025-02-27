@@ -1,0 +1,91 @@
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Parameter
+x_start, x_end = 0, 2 * np.pi  
+a = 1 # Geschwindigkeit
+k_factor = 0.8
+T_end = 10*np.pi
+
+# Verschiedene Gitterweiten für die Konvergenzstudie
+m_values = [100, 200, 400]
+errors_lw = []
+errors_lf = []
+errors_up = []
+
+for m in m_values:
+    h = (x_end - x_start) / (m + 1)  # räumlicher Schritt
+    k = k_factor * h  # Zeitschritt
+    N = int(T_end / k)
+    x = np.linspace(x_start, x_end, m + 2)  
+    
+    # Initialisierung der Lösungen
+    U_lw = np.zeros((N + 1, m + 2))
+    U_lf = np.zeros((N + 1, m + 2))
+    U_up = np.zeros((N + 1, m + 2))
+    U_lw[0, :] = np.exp(np.sin(x))  
+    U_lf[0, :] = np.exp(np.sin(x))  
+    U_up[0, :] = np.exp(np.sin(x))  
+
+    # Lax-Wendroff-Methode
+    for j in range(1, N + 1):  
+        for l in range(1, m + 1):  
+            U_lw[j, l] = (U_lw[j - 1, l]
+                       - (a * k / (2 * h)) * (U_lw[j - 1, l + 1] - U_lw[j - 1, l - 1])
+                       + (a**2 * k**2 / (2 * h**2)) * (U_lw[j - 1, l - 1] - 2 * U_lw[j - 1, l] + U_lw[j - 1, l + 1])
+            )
+            U_lf[j, l] = (
+                (1/2) * (U_lf[j - 1, l - 1] + U_lf[j - 1, l + 1])
+                - (a * k / (2 * h)) * (U_lf[j - 1, l + 1] - U_lf[j - 1, l - 1])
+            )
+            U_up[j, l] = U_up[j - 1, l] - (a * k / h) * (U_up[j - 1, l] - U_up[j - 1, l - 1])
+        # Periodische Randbedingungen
+        U_lw[j, 0] = (U_lw[j - 1, 0]
+                   - (a * k / (2 * h)) * (U_lw[j - 1, 1] - U_lw[j - 1, m])
+                   + (a**2 * k**2 / (2 * h**2)) * (U_lw[j - 1, m] - 2 * U_lw[j - 1, 0] + U_lw[j - 1, 1])
+        )
+        U_lw[j, m + 1] = U_lw[j, 0]  
+        
+        U_lf[j, 0] = (
+            (1/2) * (U_lf[j - 1, m] + U_lf[j - 1, 1]) 
+            - (a * k / (2 * h)) * (U_lf[j - 1, 1] - U_lf[j - 1, m])
+        )
+        U_lf[j, m + 1] = U_lf[j, 0]  
+        
+        U_up[j, 0] = U_up[j - 1, 0] - (a * k / h) * (U_up[j - 1, 0] - U_up[j - 1, m])
+        U_up[j, m + 1] = U_up[j, 0]
+
+    # Exakte Lösung
+    x_exact = np.linspace(x_start, x_end, m + 2)  
+    t = T_end  
+    u_exact = np.exp(np.sin(x_exact - a * t))
+    
+    # Fehlerberechnung (L2-Norm)
+    error_lw = np.sqrt(h * np.sum((U_lw[-1, :] - u_exact) ** 2))
+    error_lf = np.sqrt(h * np.sum((U_lf[-1, :] - u_exact) ** 2))
+    error_up = np.sqrt(h * np.sum((U_up[-1, :] - u_exact) ** 2))
+    errors_lw.append(error_lw)
+    errors_lf.append(error_lf)
+    errors_up.append(error_up)
+    print(f"m = {m}, Fehler (Lax-Wendroff) = {error_lw:.6e}, Fehler (Lax-Friedrich) = {error_lf:.6e}, Fehler (Upwind) = {error_up:.6e}")
+
+# Konvergenzordnung bestimmen
+orders_lw = [np.log(errors_lw[i] / errors_lw[i+1]) / np.log(2) for i in range(len(errors_lw)-1)]
+orders_lf = [np.log(errors_lf[i] / errors_lf[i+1]) / np.log(2) for i in range(len(errors_lf)-1)]
+orders_up = [np.log(errors_up[i] / errors_up[i+1]) / np.log(2) for i in range(len(errors_up)-1)]
+print("Beobachtete Konvergenzordnung (Lax-Wendroff):", orders_lw)
+print("Beobachtete Konvergenzordnung (Lax-Friedrich):", orders_lf)
+print("Beobachtete Konvergenzordnung (Upwind):", orders_up)
+
+# Fehlerplot
+plt.figure(figsize=(8, 6))
+plt.loglog(m_values, errors_lw, marker='o',color='black', linestyle='-', label='Fehler (Lax-Wendroff)')
+plt.loglog(m_values, errors_lf, marker='s',color='orange', linestyle='-', label='Fehler (Lax-Friedrich)')
+plt.loglog(m_values, errors_up, marker='^',color='#1f77b4', linestyle='-', label='Fehler (Upwind)')
+plt.xlabel('Anzahl der Gitterpunkte m', fontsize=12)
+plt.ylabel('L2-Fehler', fontsize=12)
+plt.title('Konvergenzstudie für Lax-Wendroff, Lax-Friedrich und Upwind', fontsize=14)
+plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+plt.legend()
+plt.show()
