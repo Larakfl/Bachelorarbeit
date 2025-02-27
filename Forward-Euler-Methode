@@ -1,0 +1,34 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Parameter
+kappa = -1
+k = 2.1
+u0 = 1
+t_max = 25
+
+# Zeitvektor
+t = np.arange(0, t_max, k)
+t_exact = np.linspace(0, t_max, 1000)
+
+# Exakte Lösung
+u_exact = u0 * np.exp(kappa * t_exact)
+
+# Vorwärts-Euler-Lösung
+u_euler = np.zeros_like(t)
+u_euler[0] = u0
+for n in range(1, len(t)):
+    u_euler[n] = u_euler[n-1] + kappa * k * u_euler[n-1]
+
+# Plot
+plt.figure(figsize=(10, 5))
+plt.plot(t_exact, u_exact, color='black', label='Analytische Lösung')  # Analytische Lösung in Schwarz
+plt.plot(t, u_euler, color='#1f77b4', label='Forward Euler Lösung')  # Forward Euler in Kornblumenblau
+plt.xlabel('$t$', fontsize=14)
+plt.ylabel('$y$', fontsize=14)
+plt.legend(loc='best')
+plt.title('Forward Euler Lösung vs exakte Lösung', fontsize=14)
+
+# Gitter und Anzeige
+plt.grid(True)
+plt.show()
