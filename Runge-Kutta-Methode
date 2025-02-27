@@ -1,0 +1,73 @@
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Parameter
+x_start, x_end = 0, 2 * np.pi 
+m = 50  # Anzahl der räumlichen Gitterpunkte
+h = (x_end - x_start) / (m + 1)  # räumlicher Schritt
+a = 3.5
+t = 20*np.pi
+# t = 200
+k = 0.8 * h  # Zeitschritt
+N = int(t / k)  # Anzahl der Zeitschritte
+
+# Gitterpunkte (nur m+1 Punkte!)
+x = np.linspace(x_start, x_end, m + 1)
+
+print("CFL-Wert:", abs(a * k / h)) 
+
+# Anfangsdaten
+def initial_condition(x):
+    return np.exp(np.sin(x))
+
+U = initial_condition(x) 
+
+# Runge-Kutta-Verfahren
+def runge_kutta_step(U, D, k):
+    Y1 = U
+    Y2 = U + 0.5 * k * (D @ Y1)
+    Y3 = U + 0.5 * k * (D @ Y2)
+    Y4 = U + k * (D @ Y3)
+    return U + (k / 6) * ((D @ Y1) + 2 * (D @ Y2) + 2 * (D @ Y3) + (D @ Y4))
+
+# Matrix D
+D = np.zeros((m+1, m+1))
+
+for i in range(1, m): 
+    D[i, i+1] = 1  
+    D[i, i-1] = -1  
+
+# Periodische Randbedingungen
+D[0, 1] = 1    
+D[0, m] = -1   
+
+D[m, 0] = 1    
+D[m, m-1] = -1  # 
+
+D = D * (-a / (2 * h))
+
+# Numerische Lösung 
+tlocal = 0.
+for n in range(N):
+    U = runge_kutta_step(U, D, k)
+    tlocal += k
+
+# Exakte Lösung 
+x_exact = np.linspace(x_start,x_end,100)
+u_exact = np.exp(np.sin(x_exact - a * tlocal))
+
+# Plot
+plt.figure(figsize=(10, 6))
+plt.plot(x, U, label='Numerische Lösung (Runge-Kutta)', linestyle='-')
+plt.plot(x_exact, u_exact, color='black', linestyle='--', label=r'Exakte Lösung $u(x, t) = e^{\sin(x - at)}$')
+
+plt.xlabel('x', fontsize=12)
+plt.ylabel('u(x, t)', fontsize=12)
+plt.title(f'Numerische vs. Exakte Lösung bei t = {t}', fontsize=14)
+plt.grid(True)
+plt.legend(fontsize=12)
+plt.ylim([0, 3])
+plt.show()
+
+
