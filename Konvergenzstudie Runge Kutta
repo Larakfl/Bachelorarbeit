@@ -1,0 +1,77 @@
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Parameter
+x_start, x_end = 0, 2 * np.pi  
+a = 1  
+t = np.pi / 2  
+
+def run_simulation(m):
+    h = (x_end - x_start) / (m + 1)  
+    k = 0.8 * h  
+    N = int(t / k)  
+
+    x = np.linspace(x_start, x_end, m + 1)  
+
+    # Anfangswerte
+    U = np.exp(np.sin(x))  
+
+    D = np.zeros((m+1, m+1))
+    
+    for i in range(1, m):  
+        D[i, i+1] = 1
+        D[i, i-1] = -1
+
+    # Periodische Randbedingungen
+    D[0, 1] = 1    # u(1)
+    D[0, m] = -1   # u(m) -> entspricht u(-1)
+
+    D[m, 0] = 1    # u(0) -> entspricht u(m+1)
+    D[m, m-1] = -1  # u(m-1)
+
+    # Skalierung mit -a / (2h)
+    D = D * (-a / (2 * h))
+
+    # Runge-Kutta-Verfahren
+    def runge_kutta_step(U, D, k):
+        Y1 = U
+        Y2 = U + 0.5 * k * (D @ Y1)
+        Y3 = U + 0.5 * k * (D @ Y2)
+        Y4 = U + k * (D @ Y3)
+        return U + (k / 6) * ((D @ Y1) + 2 * (D @ Y2) + 2 * (D @ Y3) + (D @ Y4))
+
+    # Numerische Lösung berechnen
+    tlocal = 0.
+    for n in range(N):
+        U = runge_kutta_step(U, D, k)
+        tlocal += k
+
+    return x, U, tlocal
+
+# Simulation für h (m=100), h/2 (m=200), h/4 (m=400) 
+x_h, U_h, tlocal_h1 = run_simulation(100)
+x_h2, U_h2, tlocal_h2 = run_simulation(200)
+x_h3, U_h3, tlocal_h3 = run_simulation(400)
+
+# Exakte Lösung
+u_exact_h = np.exp(np.sin(x_h - a * tlocal_h1))
+u_exact_h2 = np.exp(np.sin(x_h2 - a * tlocal_h2))
+u_exact_h3 = np.exp(np.sin(x_h3 - a * tlocal_h3))
+
+# Fehlerberechnung
+error_h = np.linalg.norm(U_h - u_exact_h, ord=np.inf)
+error_h2 = np.linalg.norm(U_h2 - u_exact_h2, ord=np.inf)
+error_h3 = np.linalg.norm(U_h3 - u_exact_h3, ord=np.inf)
+
+# Konvergenzordnung
+order = np.log2(error_h / error_h2)
+order2 = np.log2(error_h2 / error_h3)
+
+print(f"Fehler für h: {error_h:.6f}")
+print(f"Fehler für h/2: {error_h2:.6f}")
+print(f"Fehler für h/4: {error_h3:.6f}")
+print(f"Konvergenzordnung (h → h/2): {order:.6f}")
+print(f"Konvergenzordnung (h/2 → h/4): {order2:.6f}")
+
+
