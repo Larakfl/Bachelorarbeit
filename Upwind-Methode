@@ -1,0 +1,61 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Parameter
+x_start, x_end = 0, 2 * np.pi  
+m = 50
+h = (x_end - x_start) / (m + 1)  
+a = -1
+k = 0.8 * h  
+T_end = 2 * np.pi
+N = int(T_end / k)
+x = np.linspace(x_start, x_end, m + 1)  
+
+print(abs(a * k / h))
+
+# Anfangsdaten
+U = np.zeros((N + 1, m + 1))
+U[0, :] = np.exp(np.sin(x))  
+
+# Upwind-Methode
+for j in range(1, N + 1):  
+    if a >= 0:
+        for l in range(1, m):  
+            U[j, l] = (U[j - 1, l]
+                       - (a * k / (h)) * (U[j - 1, l] - U[j - 1, l - 1])
+            )
+        # Periodische Randbedingungen
+        U[j, 0] = (U[j - 1, 0]
+                   - (a * k / (h)) * (U[j - 1, 0] - U[j - 1, m - 1])
+        )
+    else:
+        for l in range(1, m):  # Anpassung der Schleifenbegrenzung
+            U[j, l] = (U[j - 1, l]
+                       - (a * k / (h)) * (U[j - 1, l - 1] - U[j - 1, l])
+            )
+        # Periodische Randbedingungen
+        U[j, 0] = (U[j - 1, 0]
+                   - (a * k / (h)) * (U[j - 1, m - 1] - U[j - 1, 0])
+        )
+    U[j, m] = U[j, 0]  
+
+# Exakte Lösung
+x_exact = np.linspace(x_start, x_end, 200)  
+t = T_end  
+u_exact = np.exp(np.sin(x_exact - a * t))
+
+plt.figure(figsize=(10, 6))
+
+# Upwind-Lösung
+plt.plot(x, U[-1, :], label='Numerische Lösung (Upwind)')
+
+# Exakte Lösung
+plt.plot(x_exact, u_exact, color='black', linestyle='--', label=r'Exakte Lösung $u(x,t) = e^{\sin(x - at)}$')
+
+plt.xlabel('x', fontsize=12)
+plt.ylabel('u(x, t)', fontsize=12)
+plt.title(f'Numerische vs. Exakte Lösung bei t = {t}', fontsize=14)
+plt.grid(True)
+plt.legend(fontsize=12)
+plt.ylim([0, 3])
+plt.show()
