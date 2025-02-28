@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 x_start, x_end = 0, 2 * np.pi  
 m = 50  # Anzahl der räumlichen Gitterpunkte
 h = (x_end - x_start) / (m + 1)  # räumlicher Schritt
-a = 1.5  # Geschwindigkeit
+a = 1  # Geschwindigkeit
 k = 0.8 * h  # Zeitschritt
 T_end = 10 * np.pi
 N = int(T_end / k)
